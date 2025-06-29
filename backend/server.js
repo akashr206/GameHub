@@ -13,9 +13,12 @@ const io = new Server(server, {
     },
 });
 
+const rpsNamespaces = io.of("/rps");
+require("./games/rps")(rpsNamespaces);
+
 io.on("connection", (socket) => {
-    console.log(`${socket.id} connected`)
-})
+    console.log(`${socket.id} connected`);
+});
 
 server.listen(9090, () => {
     console.log("Listening to the port", 9090);
