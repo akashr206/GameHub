@@ -2,6 +2,7 @@ const express = require("express");
 const { Server } = require("socket.io");
 const http = require("http");
 const cors = require("cors");
+const rps = require("./games/rps");
 
 const app = express();
 app.use(cors());
@@ -14,7 +15,7 @@ const io = new Server(server, {
 });
 
 const rpsNamespaces = io.of("/rps");
-require("./games/rps")(rpsNamespaces);
+rps(rpsNamespaces);
 
 io.on("connection", (socket) => {
     console.log(`${socket.id} connected`);

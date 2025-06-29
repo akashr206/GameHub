@@ -1,13 +1,19 @@
-module.export = function (io) {
+module.exports = function (io) {
     const rooms = {};
     const choices = {};
     const scores = {};
     io.on("connection", (socket) => {
         console.log("[RPS] Player connected:", socket.id);
 
-        socket.on("joinRoom", (room) => {
-            if (rooms[room] && rooms[room].size === 2) {
-                io.to(room).emit("maxPlayersReached");
+        socket.on("joinRoom", (room, callback) => {
+            if (!room) {
+                return callback({
+                    success: false,
+                    error: "Room ID is missing",
+                });
+            }
+            if (rooms[room] && rooms[room].size >= 2) {
+                return callback({ success: false, error: "Room is full" });
             }
 
             socket.join(room);
@@ -17,9 +23,12 @@ module.export = function (io) {
             if (rooms[room].size === 2) {
                 io.to(room).emit("startGame");
             }
+            callback({ success: true });
         });
 
         socket.on("makeChoice", ({ room, choice }) => {
+            console.log();
+            
             if (!choices[room]) choices[room] = {};
             choices[room][socket.id] = choice;
             if (Object.keys(choices[room]).length === 2) {
@@ -31,7 +40,7 @@ module.export = function (io) {
                 const winner =
                     result === "draw" ? "draw" : result === c1 ? p1 : p2;
 
-                io.to(room).emit("gameResult", {
+                io.to(room).emit("roundResult", {
                     choices: { [p1]: c1, [p2]: c2 },
                     winner,
                 });
