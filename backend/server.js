@@ -17,7 +17,6 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} connected`)
 })
 
-
 server.listen(9090, () => {
     console.log("Listening to the port", 9090);
 });
