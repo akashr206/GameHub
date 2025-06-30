@@ -1,11 +1,11 @@
 module.exports = function (io) {
     const rooms = {};
     const choices = {};
+    const names = {};
     const scores = {};
     io.on("connection", (socket) => {
-        console.log("[RPS] Player connected:", socket.id);
-
-        socket.on("joinRoom", (room, callback) => {
+        socket.on("joinRoom", ({ id, name }, callback) => {
+            const room = id;
             if (!room) {
                 return callback({
                     success: false,
@@ -19,16 +19,19 @@ module.exports = function (io) {
             socket.join(room);
             if (!rooms[room]) rooms[room] = new Set();
             rooms[room].add(socket.id);
-
+            if (!name) name = "Player" + (rooms[room].size);
+            if (!names[room]) names[room] = {};
+            names[room][socket.id] = name;
             if (rooms[room].size === 2) {
-                io.to(room).emit("startGame");
+                io.to(room).emit("startGame", {
+                    names: names[room],
+                });
             }
+            console.log(" [RPS] Connected : ", socket.id);
             callback({ success: true });
         });
 
         socket.on("makeChoice", ({ room, choice }) => {
-            console.log();
-            
             if (!choices[room]) choices[room] = {};
             choices[room][socket.id] = choice;
             if (Object.keys(choices[room]).length === 2) {
@@ -51,12 +54,15 @@ module.exports = function (io) {
         socket.on("disconnect", () => {
             for (const room in rooms) {
                 if (rooms[room].has(socket.id)) {
+                    
                     rooms[room].delete(socket.id);
                     delete choices?.[room]?.[socket.id];
+                    delete names?.[room]?.[socket.id];
+                    io.to(room).emit("playerLeft" , {
+                        remainingPlayer : rooms[room]
+                    });
 
-                    io.to(room).emit("playerLeft");
-
-                    if (rooms[room].size === 0) {
+                    if (rooms[room].size <= 0) {
                         delete rooms[room];
                         delete choices[room];
                     }

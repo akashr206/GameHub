@@ -21,7 +21,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en" className="dar">
+        <html lang="en">
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
@@ -30,9 +30,9 @@ export default function RootLayout({ children }) {
                     defaultTheme="system"
                     enableSystem
                 >
-                    <Toaster richColors></Toaster>
+                    <Toaster richColors theme="dark"></Toaster>
                     <Navbar />
-                    <main className="pt-16">{children}</main>
+                    <main className="pt-16 overflow-x-hidden">{children}</main>
                 </ThemeProvider>
             </body>
         </html>
