@@ -23,16 +23,15 @@ const RockPaperScissors = ({ params }) => {
     const [opponentChoice, setOpponentChoice] = useState(null);
     const [result, setResult] = useState("");
     const [score, setScore] = useState({ player: 0, opponent: 0 });
-    const [roundTimer, setRoundTimer] = useState(0);
     const [choiceTimer, setChoiceTimer] = useState(30);
     const [showResult, setShowResult] = useState(false);
     const [waitingForOpponent, setWaitingForOpponent] = useState(false);
     const [gameWinner, setGameWinner] = useState(null);
     const [gameEnded, setGameEnded] = useState(false);
     const [gamePhase, setGamePhase] = useState("waiting");
+    
     const { id } = use(params);
     const router = useRouter();
-    const roundTimerRef = useRef(null);
     const choiceTimerRef = useRef(null);
     const socketRef = useRef(null);
     const hasAutoSelectedRef = useRef(false);
@@ -49,37 +48,15 @@ const RockPaperScissors = ({ params }) => {
         return "bg-yellow-500";
     };
 
-    const clearAllTimers = () => {
-        if (roundTimerRef.current) {
-            clearInterval(roundTimerRef.current);
-            roundTimerRef.current = null;
-        }
+    const clearChoiceTimer = () => {
         if (choiceTimerRef.current) {
             clearInterval(choiceTimerRef.current);
             choiceTimerRef.current = null;
         }
     };
 
-    const startRoundTimer = () => {
-        clearAllTimers();
-        setRoundTimer(5);
-        setGamePhase("showing");
-        
-        roundTimerRef.current = setInterval(() => {
-            setRoundTimer((prev) => {
-                if (prev <= 1) {
-                    clearInterval(roundTimerRef.current);
-                    roundTimerRef.current = null;
-                    resetRound();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    };
-
     const startChoiceTimer = () => {
-        clearAllTimers();
+        clearChoiceTimer();
         setChoiceTimer(30);
         setGamePhase("choosing");
         hasAutoSelectedRef.current = false;
@@ -87,8 +64,7 @@ const RockPaperScissors = ({ params }) => {
         choiceTimerRef.current = setInterval(() => {
             setChoiceTimer((prev) => {
                 if (prev <= 1) {
-                    clearInterval(choiceTimerRef.current);
-                    choiceTimerRef.current = null;
+                    clearChoiceTimer();
                     
                     if (!hasAutoSelectedRef.current) {
                         hasAutoSelectedRef.current = true;
@@ -108,7 +84,7 @@ const RockPaperScissors = ({ params }) => {
     };
 
     const resetRound = () => {
-        clearAllTimers();
+        clearChoiceTimer();
         setPlayerChoice(null);
         setOpponentChoice(null);
         setResult("");
@@ -116,6 +92,7 @@ const RockPaperScissors = ({ params }) => {
         setWaitingForOpponent(false);
         hasAutoSelectedRef.current = false;
         
+        // Check for game end condition
         if (score.player >= 10 || score.opponent >= 10) {
             setGameEnded(true);
             setGameWinner(score.player >= 10 ? "You" : opponentName || "Opponent");
@@ -123,16 +100,14 @@ const RockPaperScissors = ({ params }) => {
             return;
         }
         
+        // Start next round
         setTimeout(() => {
-            setGamePhase("choosing");
             startChoiceTimer();
-        }, 100);
+        }, 1500); // Give players time to see the result
     };
 
     const initializeSocket = () => {
-        if (socketRef.current) {
-            return;
-        }
+        if (socketRef.current) return;
 
         try {
             socketRef.current = io("http://localhost:9090/rps", {
@@ -163,7 +138,6 @@ const RockPaperScissors = ({ params }) => {
                     
                     setOpponentName(names[opponent]);
                     setGameStarted(true);
-                    setGamePhase("choosing");
                     startChoiceTimer();
                 } catch (error) {
                     console.error("Error starting game:", error);
@@ -181,7 +155,7 @@ const RockPaperScissors = ({ params }) => {
                         return;
                     }
 
-                    clearAllTimers();
+                    clearChoiceTimer();
 
                     const opponentChoiceName = choices[opponent];
                     const opponentChoiceObj = choicesList.find(c => c.name === opponentChoiceName);
@@ -199,13 +173,27 @@ const RockPaperScissors = ({ params }) => {
                     setShowResult(true);
                     setWaitingForOpponent(false);
 
+                    // Update score
                     if (gameScore) {
-                        const playerScore = gameScore[me] || 0;
-                        const opponentScore = gameScore[opponent] || 0;
-                        setScore({ player: playerScore, opponent: opponentScore });
+                        const newPlayerScore = gameScore[me] || 0;
+                        const newOpponentScore = gameScore[opponent] || 0;
+                        setScore({ player: newPlayerScore, opponent: newOpponentScore });
+                        
+                        // Check for game end after score update
+                        if (newPlayerScore >= 10 || newOpponentScore >= 10) {
+                            setTimeout(() => {
+                                setGameEnded(true);
+                                setGameWinner(newPlayerScore >= 10 ? "You" : opponentName || "Opponent");
+                                setGamePhase("ended");
+                            }, 2000); // Show result for 2 seconds before ending game
+                            return;
+                        }
                     }
 
-                    startRoundTimer();
+                    // Continue to next round if game hasn't ended
+                    setTimeout(() => {
+                        resetRound();
+                    }, 2000);
                     
                 } catch (error) {
                     console.error("Error processing round result:", error);
@@ -219,27 +207,16 @@ const RockPaperScissors = ({ params }) => {
 
             socketRef.current.on("disconnect", () => {
                 toast.warning("Disconnected from server");
-                clearAllTimers();
+                clearChoiceTimer();
                 setConnected(false);
             });
 
             socketRef.current.on("playerLeft", ({ leftPlayerName, remainingPlayer }) => {
-                clearAllTimers();
-                console.log(remainingPlayer);
+                clearChoiceTimer();
                 
                 if (remainingPlayer === socketRef.current.id) {
                     toast.info(`${leftPlayerName || "Opponent"} left the game`);
-                    setGameStarted(false);
-                    setGamePhase("waiting");
-                    setOpponentName(null);
-                    setPlayerChoice(null);
-                    setOpponentChoice(null);
-                    setResult("");
-                    setShowResult(false);
-                    setWaitingForOpponent(false);
-                    setGameEnded(false);
-                    setGameWinner(null);
-                    setScore({ player: 0, opponent: 0 });
+                    resetGameState();
                 } else {
                     toast.info("You left the game");
                     router.push("/rps");
@@ -252,16 +229,30 @@ const RockPaperScissors = ({ params }) => {
         }
     };
 
+    const resetGameState = () => {
+        setGameStarted(false);
+        setGamePhase("waiting");
+        setOpponentName(null);
+        setPlayerChoice(null);
+        setOpponentChoice(null);
+        setResult("");
+        setShowResult(false);
+        setWaitingForOpponent(false);
+        setGameEnded(false);
+        setGameWinner(null);
+        setScore({ player: 0, opponent: 0 });
+    };
+
     const joinRoom = () => {
         const playerName = getName();
         
-        if (!playerName || playerName.trim() === "") {
+        if (!playerName?.trim()) {
             toast.error("Player name is required. Please set your name first.");
             router.push("/rps");
             return;
         }
 
-        if (!id || id.trim() === "") {
+        if (!id?.trim()) {
             toast.error("Invalid room ID.");
             router.push("/rps");
             return;
@@ -269,7 +260,7 @@ const RockPaperScissors = ({ params }) => {
 
         if (socketRef.current) {
             socketRef.current.emit("joinRoom", { id: id.trim(), name: playerName.trim() }, (response) => {
-                if (response && response.success) {
+                if (response?.success) {
                     setConnected(true);
                 } else {
                     toast.error(response?.error || "Failed to join room");
@@ -280,25 +271,21 @@ const RockPaperScissors = ({ params }) => {
     };
 
     const makeChoice = (choice) => {
-        if (!choicesList.find(c => c.name === choice)) {
-            toast.error("Invalid choice selected");
-            return;
-        }
-
-        if (gamePhase !== "choosing") {
-            return;
-        }
-
-        if (playerChoice || hasAutoSelectedRef.current) {
+        if (gamePhase !== "choosing" || playerChoice || hasAutoSelectedRef.current) {
             return;
         }
 
         const selectedChoice = choicesList.find(c => c.name === choice);
+        if (!selectedChoice) {
+            toast.error("Invalid choice selected");
+            return;
+        }
+
         setPlayerChoice(selectedChoice.emoji);
         setWaitingForOpponent(true);
         hasAutoSelectedRef.current = true;
         
-        clearAllTimers();
+        clearChoiceTimer();
         setChoiceTimer(0);
 
         if (socketRef.current) {
@@ -307,11 +294,10 @@ const RockPaperScissors = ({ params }) => {
     };
 
     const resetGame = () => {
-        clearAllTimers();
+        clearChoiceTimer();
         setScore({ player: 0, opponent: 0 });
         setGameWinner(null);
         setGameEnded(false);
-        setGamePhase("choosing");
         hasAutoSelectedRef.current = false;
         resetRound();
     };
@@ -327,7 +313,7 @@ const RockPaperScissors = ({ params }) => {
         initializeSocket();
 
         return () => {
-            clearAllTimers();
+            clearChoiceTimer();
             if (socketRef.current) {
                 socketRef.current.disconnect();
                 socketRef.current = null;
@@ -362,24 +348,14 @@ const RockPaperScissors = ({ params }) => {
                 </CardHeader>
 
                 <CardContent className="space-y-6">
-                    {gameStarted && gamePhase !== "ended" && (
+                    {gameStarted && gamePhase === "choosing" && choiceTimer > 0 && !playerChoice && (
                         <div className="text-center">
-                            {gamePhase === "choosing" && choiceTimer > 0 && !playerChoice && (
-                                <div className="flex items-center justify-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    <span className={`font-bold ${getTimerColor(choiceTimer, 30)}`}>
-                                        Choose in: {choiceTimer}s
-                                    </span>
-                                </div>
-                            )}
-                            {gamePhase === "showing" && roundTimer > 0 && (
-                                <div className="flex items-center justify-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    <span className={`font-bold ${getTimerColor(roundTimer, 5)}`}>
-                                        Next round in: {roundTimer}s
-                                    </span>
-                                </div>
-                            )}
+                            <div className="flex items-center justify-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span className={`font-bold ${getTimerColor(choiceTimer, 30)}`}>
+                                    Choose in: {choiceTimer}s
+                                </span>
+                            </div>
                         </div>
                     )}
 
