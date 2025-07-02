@@ -173,24 +173,21 @@ const RockPaperScissors = ({ params }) => {
                     setShowResult(true);
                     setWaitingForOpponent(false);
 
-                    // Update score
                     if (gameScore) {
                         const newPlayerScore = gameScore[me] || 0;
                         const newOpponentScore = gameScore[opponent] || 0;
                         setScore({ player: newPlayerScore, opponent: newOpponentScore });
                         
-                        // Check for game end after score update
                         if (newPlayerScore >= 10 || newOpponentScore >= 10) {
                             setTimeout(() => {
                                 setGameEnded(true);
                                 setGameWinner(newPlayerScore >= 10 ? "You" : opponentName || "Opponent");
                                 setGamePhase("ended");
-                            }, 2000); // Show result for 2 seconds before ending game
+                            }, 2000); 
                             return;
                         }
                     }
 
-                    // Continue to next round if game hasn't ended
                     setTimeout(() => {
                         resetRound();
                     }, 2000);
@@ -213,7 +210,6 @@ const RockPaperScissors = ({ params }) => {
 
             socketRef.current.on("playerLeft", ({ leftPlayerName, remainingPlayer }) => {
                 clearChoiceTimer();
-                
                 if (remainingPlayer === socketRef.current.id) {
                     toast.info(`${leftPlayerName || "Opponent"} left the game`);
                     resetGameState();

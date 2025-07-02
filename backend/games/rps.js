@@ -52,7 +52,7 @@ module.exports = function (io) {
                 scores[room][socket.id];
                 io.to(room).emit("roundResult", {
                     choices: { [p1]: c1, [p2]: c2 },
-                    score : scores[room],
+                    score: scores[room],
                     winner,
                 });
                 delete choices[room];
@@ -66,7 +66,9 @@ module.exports = function (io) {
                     delete choices?.[room]?.[socket.id];
                     delete names?.[room]?.[socket.id];
                     io.to(room).emit("playerLeft", {
-                        remainingPlayer: rooms[room],
+                        remainingPlayer: rooms[room]
+                            ? Array.from(rooms[room])[0]
+                            : "",
                     });
 
                     if (rooms[room].size <= 0) {
