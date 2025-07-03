@@ -247,6 +247,7 @@ const RockPaperScissors = ({ params }) => {
             router.push("/rps");
             return;
         }
+        
 
         if (!id?.trim()) {
             toast.error("Invalid room ID.");
