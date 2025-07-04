@@ -8,8 +8,11 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { nanoid } from "nanoid";
+import { useSearchParams } from "next/navigation";
+
 const page = () => {
     const [userName, setUserName] = useState("");
+    const searchParams = useSearchParams();
     const router = useRouter();
     const [roomId, setRoomId] = useState("");
 
@@ -36,6 +39,9 @@ const page = () => {
 
     useEffect(() => {
         setUserName(getName());
+        console.log(searchParams.get("id"));
+        
+        setRoomId(searchParams.get("id") || "");
     }, []);
 
     return (
@@ -45,7 +51,7 @@ const page = () => {
                     "w-full p-8 gap-4 max-w-xs flex flex-col items-center"
                 }
             >
-                <span className="bg-secondary text-primary-foreground p-4 rounded-full">
+                <span className="bg-primary text-primary-foreground p-4 rounded-full">
                     <User2 className="w-10 h-10"></User2>
                 </span>
                 <div className="w-full text-left">
@@ -60,6 +66,7 @@ const page = () => {
                     <label htmlFor="room">Room</label>
                     <Input
                         onChange={(e) => setRoomId(e.target.value)}
+                        value={roomId}
                         className="mt-1"
                         id="room"
                         placeholder="Room Id"

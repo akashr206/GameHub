@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { io } from "socket.io-client";
-import { Loader2, Clock } from "lucide-react";
+import { Loader2, Clock, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { getName } from "@/lib/local";
@@ -92,7 +92,6 @@ const RockPaperScissors = ({ params }) => {
         setWaitingForOpponent(false);
         hasAutoSelectedRef.current = false;
         
-        // Check for game end condition
         if (score.player >= 10 || score.opponent >= 10) {
             setGameEnded(true);
             setGameWinner(score.player >= 10 ? "You" : opponentName || "Opponent");
@@ -100,10 +99,9 @@ const RockPaperScissors = ({ params }) => {
             return;
         }
         
-        // Start next round
         setTimeout(() => {
             startChoiceTimer();
-        }, 1500); // Give players time to see the result
+        }, 1500); 
     };
 
     const initializeSocket = () => {
@@ -319,7 +317,7 @@ const RockPaperScissors = ({ params }) => {
     }, []);
 
     return (
-        <div className="max-w-2xl relative mx-auto p-6 space-y-6">
+        <div className="max-w-2xl min-h-[calc(100vh-64px)] relative mx-auto p-6 space-y-6">
             {!connected && (
                 <div className="absolute inset-0 gap-2 bg-background/65 backdrop-blur-lg z-20 flex flex-col justify-center items-center">
                     <Loader2 className="animate-spin ease-in-out" />
@@ -331,6 +329,7 @@ const RockPaperScissors = ({ params }) => {
                 <div className="absolute inset-0 gap-2 bg-background/65 backdrop-blur-lg z-20 flex flex-col justify-center items-center">
                     <Loader2 className="animate-spin ease-in-out" />
                     <p className="text-sm text-muted-foreground">Waiting for the players...</p>
+                    <Button>Invite Players</Button>
                 </div>
             )}
 
