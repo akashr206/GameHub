@@ -10,10 +10,19 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { io } from "socket.io-client";
-import { Loader2, Clock, UserPlus } from "lucide-react";
+import { Loader2, Clock, UserPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { getName } from "@/lib/local";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 const RockPaperScissors = ({ params }) => {
     const [connected, setConnected] = useState(false);
@@ -29,7 +38,7 @@ const RockPaperScissors = ({ params }) => {
     const [gameWinner, setGameWinner] = useState(null);
     const [gameEnded, setGameEnded] = useState(false);
     const [gamePhase, setGamePhase] = useState("waiting");
-    
+
     const { id } = use(params);
     const router = useRouter();
     const choiceTimerRef = useRef(null);
@@ -60,20 +69,25 @@ const RockPaperScissors = ({ params }) => {
         setChoiceTimer(30);
         setGamePhase("choosing");
         hasAutoSelectedRef.current = false;
-        
+
         choiceTimerRef.current = setInterval(() => {
             setChoiceTimer((prev) => {
                 if (prev <= 1) {
                     clearChoiceTimer();
-                    
+
                     if (!hasAutoSelectedRef.current) {
                         hasAutoSelectedRef.current = true;
                         setPlayerChoice("🪨");
                         setWaitingForOpponent(true);
-                        toast.warning("Time's up! Rock was automatically selected.");
-                        
+                        toast.warning(
+                            "Time's up! Rock was automatically selected."
+                        );
+
                         if (socketRef.current) {
-                            socketRef.current.emit("makeChoice", { room: id, choice: "rock" });
+                            socketRef.current.emit("makeChoice", {
+                                room: id,
+                                choice: "rock",
+                            });
                         }
                     }
                     return 0;
@@ -91,17 +105,19 @@ const RockPaperScissors = ({ params }) => {
         setShowResult(false);
         setWaitingForOpponent(false);
         hasAutoSelectedRef.current = false;
-        
+
         if (score.player >= 10 || score.opponent >= 10) {
             setGameEnded(true);
-            setGameWinner(score.player >= 10 ? "You" : opponentName || "Opponent");
+            setGameWinner(
+                score.player >= 10 ? "You" : opponentName || "Opponent"
+            );
             setGamePhase("ended");
             return;
         }
-        
+
         setTimeout(() => {
             startChoiceTimer();
-        }, 1500); 
+        }, 1500);
     };
 
     const initializeSocket = () => {
@@ -128,12 +144,14 @@ const RockPaperScissors = ({ params }) => {
                 try {
                     const me = socketRef.current.id;
                     const opponent = Object.keys(names).find((id) => id !== me);
-                    
+
                     if (!opponent || !names[opponent]) {
-                        toast.error("Invalid game setup. Missing opponent information.");
+                        toast.error(
+                            "Invalid game setup. Missing opponent information."
+                        );
                         return;
                     }
-                    
+
                     setOpponentName(names[opponent]);
                     setGameStarted(true);
                     startChoiceTimer();
@@ -143,58 +161,79 @@ const RockPaperScissors = ({ params }) => {
                 }
             });
 
-            socketRef.current.on("roundResult", ({ choices, winner, score: gameScore }) => {
-                try {
-                    const me = socketRef.current.id;
-                    const opponent = Object.keys(choices).find((id) => id !== me);
+            socketRef.current.on(
+                "roundResult",
+                ({ choices, winner, score: gameScore }) => {
+                    try {
+                        const me = socketRef.current.id;
+                        const opponent = Object.keys(choices).find(
+                            (id) => id !== me
+                        );
 
-                    if (!opponent || !choices[opponent]) {
-                        toast.error("Invalid round result. Missing opponent choice.");
-                        return;
-                    }
-
-                    clearChoiceTimer();
-
-                    const opponentChoiceName = choices[opponent];
-                    const opponentChoiceObj = choicesList.find(c => c.name === opponentChoiceName);
-                    const opponentChoiceEmoji = opponentChoiceObj ? opponentChoiceObj.emoji : "❓";
-
-                    setOpponentChoice(opponentChoiceEmoji);
-                    
-                    const resultText = winner === "draw" 
-                        ? "Draw" 
-                        : winner === me 
-                        ? "You win!" 
-                        : "You lose";
-                    
-                    setResult(resultText);
-                    setShowResult(true);
-                    setWaitingForOpponent(false);
-
-                    if (gameScore) {
-                        const newPlayerScore = gameScore[me] || 0;
-                        const newOpponentScore = gameScore[opponent] || 0;
-                        setScore({ player: newPlayerScore, opponent: newOpponentScore });
-                        
-                        if (newPlayerScore >= 10 || newOpponentScore >= 10) {
-                            setTimeout(() => {
-                                setGameEnded(true);
-                                setGameWinner(newPlayerScore >= 10 ? "You" : opponentName || "Opponent");
-                                setGamePhase("ended");
-                            }, 2000); 
+                        if (!opponent || !choices[opponent]) {
+                            toast.error(
+                                "Invalid round result. Missing opponent choice."
+                            );
                             return;
                         }
-                    }
 
-                    setTimeout(() => {
-                        resetRound();
-                    }, 2000);
-                    
-                } catch (error) {
-                    console.error("Error processing round result:", error);
-                    toast.error("Error processing round result.");
+                        clearChoiceTimer();
+
+                        const opponentChoiceName = choices[opponent];
+                        const opponentChoiceObj = choicesList.find(
+                            (c) => c.name === opponentChoiceName
+                        );
+                        const opponentChoiceEmoji = opponentChoiceObj
+                            ? opponentChoiceObj.emoji
+                            : "❓";
+
+                        setOpponentChoice(opponentChoiceEmoji);
+
+                        const resultText =
+                            winner === "draw"
+                                ? "Draw"
+                                : winner === me
+                                ? "You win!"
+                                : "You lose";
+
+                        setResult(resultText);
+                        setShowResult(true);
+                        setWaitingForOpponent(false);
+
+                        if (gameScore) {
+                            const newPlayerScore = gameScore[me] || 0;
+                            const newOpponentScore = gameScore[opponent] || 0;
+                            setScore({
+                                player: newPlayerScore,
+                                opponent: newOpponentScore,
+                            });
+
+                            if (
+                                newPlayerScore >= 10 ||
+                                newOpponentScore >= 10
+                            ) {
+                                setTimeout(() => {
+                                    setGameEnded(true);
+                                    setGameWinner(
+                                        newPlayerScore >= 10
+                                            ? "You"
+                                            : opponentName || "Opponent"
+                                    );
+                                    setGamePhase("ended");
+                                }, 2000);
+                                return;
+                            }
+                        }
+
+                        setTimeout(() => {
+                            resetRound();
+                        }, 2000);
+                    } catch (error) {
+                        console.error("Error processing round result:", error);
+                        toast.error("Error processing round result.");
+                    }
                 }
-            });
+            );
 
             socketRef.current.on("error", (err) => {
                 toast.error(err || "An unknown error occurred");
@@ -206,17 +245,21 @@ const RockPaperScissors = ({ params }) => {
                 setConnected(false);
             });
 
-            socketRef.current.on("playerLeft", ({ leftPlayerName, remainingPlayer }) => {
-                clearChoiceTimer();
-                if (remainingPlayer === socketRef.current.id) {
-                    toast.info(`${leftPlayerName || "Opponent"} left the game`);
-                    resetGameState();
-                } else {
-                    toast.info("You left the game");
-                    router.push("/rps");
+            socketRef.current.on(
+                "playerLeft",
+                ({ leftPlayerName, remainingPlayer }) => {
+                    clearChoiceTimer();
+                    if (remainingPlayer === socketRef.current.id) {
+                        toast.info(
+                            `${leftPlayerName || "Opponent"} left the game`
+                        );
+                        resetGameState();
+                    } else {
+                        toast.info("You left the game");
+                        router.push("/rps");
+                    }
                 }
-            });
-
+            );
         } catch (error) {
             console.error("Socket initialization error:", error);
             toast.error("Failed to initialize connection");
@@ -239,13 +282,12 @@ const RockPaperScissors = ({ params }) => {
 
     const joinRoom = () => {
         const playerName = getName();
-        
+
         if (!playerName?.trim()) {
             toast.error("Player name is required. Please set your name first.");
             router.push("/rps");
             return;
         }
-        
 
         if (!id?.trim()) {
             toast.error("Invalid room ID.");
@@ -254,23 +296,31 @@ const RockPaperScissors = ({ params }) => {
         }
 
         if (socketRef.current) {
-            socketRef.current.emit("joinRoom", { id: id.trim(), name: playerName.trim() }, (response) => {
-                if (response?.success) {
-                    setConnected(true);
-                } else {
-                    toast.error(response?.error || "Failed to join room");
-                    router.push("/rps");
+            socketRef.current.emit(
+                "joinRoom",
+                { id: id.trim(), name: playerName.trim() },
+                (response) => {
+                    if (response?.success) {
+                        setConnected(true);
+                    } else {
+                        toast.error(response?.error || "Failed to join room");
+                        router.push("/rps");
+                    }
                 }
-            });
+            );
         }
     };
 
     const makeChoice = (choice) => {
-        if (gamePhase !== "choosing" || playerChoice || hasAutoSelectedRef.current) {
+        if (
+            gamePhase !== "choosing" ||
+            playerChoice ||
+            hasAutoSelectedRef.current
+        ) {
             return;
         }
 
-        const selectedChoice = choicesList.find(c => c.name === choice);
+        const selectedChoice = choicesList.find((c) => c.name === choice);
         if (!selectedChoice) {
             toast.error("Invalid choice selected");
             return;
@@ -279,7 +329,7 @@ const RockPaperScissors = ({ params }) => {
         setPlayerChoice(selectedChoice.emoji);
         setWaitingForOpponent(true);
         hasAutoSelectedRef.current = true;
-        
+
         clearChoiceTimer();
         setChoiceTimer(0);
 
@@ -304,6 +354,11 @@ const RockPaperScissors = ({ params }) => {
         return "text-red-600";
     };
 
+    const handleCopy = async (e) => {
+        await navigator.clipboard.writeText(e.target.value);
+        toast.success("Copied successfully");
+    };
+
     useEffect(() => {
         initializeSocket();
 
@@ -321,15 +376,79 @@ const RockPaperScissors = ({ params }) => {
             {!connected && (
                 <div className="absolute inset-0 gap-2 bg-background/65 backdrop-blur-lg z-20 flex flex-col justify-center items-center">
                     <Loader2 className="animate-spin ease-in-out" />
-                    <p className="text-sm text-muted-foreground">Connecting to the server...</p>
+                    <p className="text-sm text-muted-foreground">
+                        Connecting to the server...
+                    </p>
                 </div>
             )}
-            
+
             {connected && !gameStarted && (
                 <div className="absolute inset-0 gap-2 bg-background/65 backdrop-blur-lg z-20 flex flex-col justify-center items-center">
                     <Loader2 className="animate-spin ease-in-out" />
-                    <p className="text-sm text-muted-foreground">Waiting for the players...</p>
-                    <Button>Invite Players</Button>
+                    <p className="text-sm text-muted-foreground">
+                        Waiting for the players...
+                    </p>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <UserPlus />
+                                Invite Players
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle className={"text-2xl"}>
+                                    Invite Player
+                                </DialogTitle>
+                                <DialogDescription>
+                                    <div className="text-left">
+                                        <div className="mb-2 ">
+                                            <p className="mb-1 text-lg">
+                                                {" "}
+                                                Link
+                                            </p>
+                                            <div className="relative">
+                                                <Input
+                                                    value={
+                                                        "http://localhost:3000/rps?id=" +
+                                                        id
+                                                    }
+                                                    readOnly
+                                                ></Input>
+                                                <Button
+                                                    variant={"ghost"}
+                                                    className={
+                                                        "w-5 h-5 absolute right-2 top-1/2 -translate-y-1/2"
+                                                    }
+                                                >
+                                                    <Copy></Copy>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="mb-1 text-lg">
+                                                Room id
+                                            </p>
+                                            <div className="relative">
+                                                <Input
+                                                    value={id}
+                                                    readOnly
+                                                ></Input>
+                                                <Button
+                                                    variant={"ghost"}
+                                                    className={
+                                                        "w-5 h-5 absolute right-2 top-1/2 -translate-y-1/2"
+                                                    }
+                                                >
+                                                    <Copy></Copy>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DialogDescription>
+                            </DialogHeader>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             )}
 
@@ -344,27 +463,39 @@ const RockPaperScissors = ({ params }) => {
                 </CardHeader>
 
                 <CardContent className="space-y-6">
-                    {gameStarted && gamePhase === "choosing" && choiceTimer > 0 && !playerChoice && (
-                        <div className="text-center">
-                            <div className="flex items-center justify-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                <span className={`font-bold ${getTimerColor(choiceTimer, 30)}`}>
-                                    Choose in: {choiceTimer}s
-                                </span>
+                    {gameStarted &&
+                        gamePhase === "choosing" &&
+                        choiceTimer > 0 &&
+                        !playerChoice && (
+                            <div className="text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                    <Clock className="w-4 h-4" />
+                                    <span
+                                        className={`font-bold ${getTimerColor(
+                                            choiceTimer,
+                                            30
+                                        )}`}
+                                    >
+                                        Choose in: {choiceTimer}s
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
                     <div className="flex justify-center space-x-8">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">
                                 {score.player}
                             </div>
-                            <div className="text-sm text-muted-foreground">You</div>
+                            <div className="text-sm text-muted-foreground">
+                                You
+                            </div>
                         </div>
                         <div className="text-center">
                             <div className="text-xl text-gray-400">VS</div>
-                            <div className="text-xs text-gray-400 mt-1">First to 10</div>
+                            <div className="text-xs text-gray-400 mt-1">
+                                First to 10
+                            </div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-red-600">
@@ -384,18 +515,20 @@ const RockPaperScissors = ({ params }) => {
                                         {gameWinner === "You" ? "🏆" : "💔"}
                                     </div>
                                     <h2 className="text-3xl font-bold">
-                                        {gameWinner === "You" ? "Congratulations!" : "Game Over"}
+                                        {gameWinner === "You"
+                                            ? "Congratulations!"
+                                            : "Game Over"}
                                     </h2>
                                     <p className="text-xl">
-                                        {gameWinner === "You" 
-                                            ? "You won the match!" 
-                                            : `${gameWinner} won the match!`
-                                        }
+                                        {gameWinner === "You"
+                                            ? "You won the match!"
+                                            : `${gameWinner} won the match!`}
                                     </p>
                                     <p className="text-lg text-muted-foreground">
-                                        Final Score: {score.player} - {score.opponent}
+                                        Final Score: {score.player} -{" "}
+                                        {score.opponent}
                                     </p>
-                                    <Button 
+                                    <Button
                                         onClick={resetGame}
                                         size="lg"
                                         className="mt-4"
@@ -407,31 +540,43 @@ const RockPaperScissors = ({ params }) => {
                         </Card>
                     )}
 
-                    {gamePhase === "choosing" && !playerChoice && !gameEnded && (
-                        <div className="grid grid-cols-3 gap-4">
-                            {choicesList.map((choice) => (
-                                <Button
-                                    key={choice.name}
-                                    variant="outline"
-                                    size="lg"
-                                    className="h-20 flex flex-col space-y-2 hover:scale-105 transition-transform"
-                                    onClick={() => makeChoice(choice.name)}
-                                    disabled={choiceTimer === 0 || hasAutoSelectedRef.current}
-                                >
-                                    <span className="text-3xl">{choice.emoji}</span>
-                                    <span className="text-sm">{choice.label}</span>
-                                </Button>
-                            ))}
-                        </div>
-                    )}
+                    {gamePhase === "choosing" &&
+                        !playerChoice &&
+                        !gameEnded && (
+                            <div className="grid grid-cols-3 gap-4">
+                                {choicesList.map((choice) => (
+                                    <Button
+                                        key={choice.name}
+                                        variant="outline"
+                                        size="lg"
+                                        className="h-20 flex flex-col space-y-2 hover:scale-105 transition-transform"
+                                        onClick={() => makeChoice(choice.name)}
+                                        disabled={
+                                            choiceTimer === 0 ||
+                                            hasAutoSelectedRef.current
+                                        }
+                                    >
+                                        <span className="text-3xl">
+                                            {choice.emoji}
+                                        </span>
+                                        <span className="text-sm">
+                                            {choice.label}
+                                        </span>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
 
                     {waitingForOpponent && !showResult && !gameEnded && (
                         <div className="text-center py-8">
                             <div className="flex flex-col items-center gap-4">
                                 <Loader2 className="animate-spin w-8 h-8" />
-                                <p className="text-lg font-medium">You chose {playerChoice}</p>
+                                <p className="text-lg font-medium">
+                                    You chose {playerChoice}
+                                </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Waiting for {opponentName || "opponent"} to choose...
+                                    Waiting for {opponentName || "opponent"} to
+                                    choose...
                                 </p>
                             </div>
                         </div>
