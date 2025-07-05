@@ -124,7 +124,8 @@ const RockPaperScissors = ({ params }) => {
         if (socketRef.current) return;
 
         try {
-            socketRef.current = io("http://localhost:9090/rps", {
+
+            socketRef.current = io(`${process.env.NEXT_PUBLIC_API_URL}/rps`, {
                 reconnectionAttempts: 3,
                 timeout: 10000,
                 forceNew: true,
