@@ -124,7 +124,6 @@ const RockPaperScissors = ({ params }) => {
         if (socketRef.current) return;
 
         try {
-
             socketRef.current = io(`${process.env.NEXT_PUBLIC_API_URL}/rps`, {
                 reconnectionAttempts: 3,
                 timeout: 10000,
@@ -410,16 +409,14 @@ const RockPaperScissors = ({ params }) => {
                                             </p>
                                             <div className="relative">
                                                 <Input
-                                                    value={
-                                                        "http://localhost:3000/rps?id=" +
-                                                        id
-                                                    }
+                                                    value={`${process.env.NEXT_PUBLIC_Frontend_URL}/rps?id=${id}`}
                                                     readOnly
                                                 ></Input>
                                                 <Button
+                                                    onClick={handleCopy}
                                                     variant={"ghost"}
                                                     className={
-                                                        "w-5 h-5 absolute right-2 top-1/2 -translate-y-1/2"
+                                                        "w-5 h-5 absolute backdrop-blur-lg bg-background/60  right-2 top-1/2 -translate-y-1/2"
                                                     }
                                                 >
                                                     <Copy></Copy>
@@ -436,9 +433,10 @@ const RockPaperScissors = ({ params }) => {
                                                     readOnly
                                                 ></Input>
                                                 <Button
+                                                    onClick={handleCopy}
                                                     variant={"ghost"}
                                                     className={
-                                                        "w-5 h-5 absolute right-2 top-1/2 -translate-y-1/2"
+                                                        "w-5 h-5 backdrop-blur-lg bg-background/60 absolute right-2 top-1/2 -translate-y-1/2"
                                                     }
                                                 >
                                                     <Copy></Copy>
