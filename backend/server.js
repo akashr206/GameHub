@@ -5,12 +5,15 @@ const cors = require("cors");
 const rps = require("./games/rps");
 
 const app = express();
-app.use(cors());
+app.use(
+    cors({
+        origin: "*",
+    })
+);
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"],
     },
 });
 

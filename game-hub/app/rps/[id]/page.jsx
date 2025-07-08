@@ -354,10 +354,15 @@ const RockPaperScissors = ({ params }) => {
         return "text-red-600";
     };
 
-    const handleCopy = async (e) => {
-        await navigator.clipboard.writeText(e.target.value);
+    const handleLinkCopy = async (e) => {
+        await navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_Frontend_URL}/rps?id=${id}`);
         toast.success("Copied successfully");
     };
+
+    const handleIdCopy = async (e) => {
+        await navigator.clipboard.writeText(id);
+        toast.success("Copied successfully")
+    }
 
     useEffect(() => {
         initializeSocket();
@@ -413,7 +418,7 @@ const RockPaperScissors = ({ params }) => {
                                                     readOnly
                                                 ></Input>
                                                 <Button
-                                                    onClick={handleCopy}
+                                                    onClick={handleLinkCopy}
                                                     variant={"ghost"}
                                                     className={
                                                         "w-5 h-5 absolute backdrop-blur-lg bg-background/60  right-2 top-1/2 -translate-y-1/2"
@@ -433,7 +438,7 @@ const RockPaperScissors = ({ params }) => {
                                                     readOnly
                                                 ></Input>
                                                 <Button
-                                                    onClick={handleCopy}
+                                                    onClick={handleIdCopy}
                                                     variant={"ghost"}
                                                     className={
                                                         "w-5 h-5 backdrop-blur-lg bg-background/60 absolute right-2 top-1/2 -translate-y-1/2"
