@@ -1,17 +1,20 @@
-import { Button } from "@/components/ui/button";
-import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
-export default function Home() {
+import Thumbnail from "@/components/Thumbnail";
+
+const page = () => {
     return (
-        <div className="w-screen h-[calc(100vh-64px)] flex flex-col gap-2 items-center justify-center">
-            <h2 className="font-bold text-3xl">Select Game</h2>
-            <div>
-                <Link href={"/rps"}>
-                    <Button>
-                        Rock Paper Scissors <ArrowUpRight></ArrowUpRight>
-                    </Button>
-                </Link>
-            </div>
-        </div>
+        <article className="w-screen h-[calc(100vh-64px)] flex gap-4 items-center justify-center">
+            <Thumbnail
+                image={"/rps.jpeg"}
+                name={"Rock Paper Scissors"}
+                link={"/rps"}
+            ></Thumbnail>
+            <Thumbnail
+                image={"/xox.png"}
+                name={"Tic Tac Toe"}
+                link={"/ttt"}
+            ></Thumbnail>
+        </article>
     );
-}
+};
+
+export default page;
